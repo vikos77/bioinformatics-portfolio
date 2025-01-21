@@ -18,4 +18,4 @@ This repository contains  my bioinformatics  projects and analyses . It showcase
 - Command Line Tools
 
 ## Contact
-Email - vigneshwaran0594@gmil.com
+Email - vigneshwaran0594@gmail.com
