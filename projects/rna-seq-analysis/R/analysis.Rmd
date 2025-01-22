@@ -1,5 +1,4 @@
-
-title: "E. coli Transcriptome Analysis under Different Growth Condition"
+title: "Transcriptional Analysis of RmpA-Mediated Regulation in Bacteria"
 author: "Vigneshwaran Muthuraman"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
@@ -9,11 +8,17 @@ output:
     theme: united
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
 ## Introduction
-This analysis explores transcriptional responses in E. coli under different growth conditions. The dataset (GSE115313) provides insights into bacterial adaptation mechanisms.
+This analysis explores how RmpA regulates the switch between hypermucoviscosity and biofilm formation in bacteria. The dataset (GSE286114) includes both E. coli and Klebsiella pneumoniae, providing insights into:
+- Transcriptional changes in RmpA mutants
+- Metabolic pathway regulation
+- Biofilm formation mechanisms
+- Virulence factor expression
+
+## Experimental Design
+- Organisms: E. coli and K. pneumoniae
+- Conditions: Wild-type vs RmpA mutants
+- Technology: RNA-seq (Illumina HiSeq 4000)
 
 # Load required libraries
 library(DESeq2)
