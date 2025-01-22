@@ -1,5 +1,5 @@
----
-title: "RNA-seq Differential Expression Analysis"
+
+title: "E. coli Transcriptome Analysis under Different Growth Condition"
 author: "Vigneshwaran Muthuraman"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
@@ -11,6 +11,9 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+## Introduction
+This analysis explores transcriptional responses in E. coli under different growth conditions. The dataset (GSE115313) provides insights into bacterial adaptation mechanisms.
 
 # Load required libraries
 library(DESeq2)
