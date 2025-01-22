@@ -1,0 +1,30 @@
+---
+title: "RNA-seq Differential Expression Analysis"
+author: "Vigneshwaran Muthuraman"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load required libraries
+library(DESeq2)
+library(tidyverse)
+library(pheatmap)
+library(ggplot2)
+library(EnhancedVolcano)
+
+# Data will be imported here
+
+# QC analysis will be added here
+
+# DESeq2 analysis will be added here
+
+# Plots will be added here
+
+
