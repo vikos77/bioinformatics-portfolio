@@ -28,3 +28,27 @@ library(EnhancedVolcano)
 # Plots will be added here
 
 
+## Analysis Overview
+- Bacterial transcriptome analysis
+- Differential expression under different conditions
+- Pathway enrichment specific to bacterial systems
+- Custom visualizations for metabolic pathways
+
+## Key Features
+1. Data preprocessing
+   - Quality control
+   - Normalization for bacterial RNA-seq
+
+2. Differential Expression
+   - DESeq2 analysis
+   - Multiple condition comparisons
+
+3. Custom Analysis
+   - Operon-based analysis
+   - Metabolic pathway visualization
+   - Gene cluster analysis
+
+4. Visualizations
+   - Volcano plots
+   - Heatmaps of key pathways
+   - Custom bacterial genome plots
