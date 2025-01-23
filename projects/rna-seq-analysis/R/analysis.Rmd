@@ -1,3 +1,4 @@
+---
 title: "Transcriptional Analysis of RmpA-Mediated Regulation in Bacteria"
 author: "Vigneshwaran Muthuraman"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
@@ -8,55 +9,46 @@ output:
     theme: united
 ---
 
-## Introduction
-This analysis explores how RmpA regulates the switch between hypermucoviscosity and biofilm formation in bacteria. The dataset (GSE286114) includes both E. coli and Klebsiella pneumoniae, providing insights into:
-- Transcriptional changes in RmpA mutants
-- Metabolic pathway regulation
-- Biofilm formation mechanisms
-- Virulence factor expression
-
-## Experimental Design
-- Organisms: E. coli and K. pneumoniae
-- Conditions: Wild-type vs RmpA mutants
-- Technology: RNA-seq (Illumina HiSeq 4000)
-
-# Load required libraries
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 library(DESeq2)
 library(tidyverse)
 library(pheatmap)
 library(ggplot2)
 library(EnhancedVolcano)
 
-# Data will be imported here
+## Introduction
+This analysis explores how RmpA regulates the switch between hypermucoviscosity and biofilm formation in bacteria. The dataset (GSE286114) includes both E. coli and Klebsiella pneumoniae, providing insights into:
+- Transcriptional changes in RmpA mutants
+- Metabolic pathway regulation
+- Biofilm formation mechanisms
+- Virulence factor expression.
 
-# QC analysis will be added here
 
-# DESeq2 analysis will be added here
+## Experimental Design
+- Organisms: E. coli and K. pneumoniae
+- Conditions: Wild-type vs RmpA mutants
+- Technology: RNA-seq (Illumina HiSeq 4000)
 
-# Plots will be added here
 
+#######################
+#Data Loading
+######################
 
-## Analysis Overview
-- Bacterial transcriptome analysis
-- Differential expression under different conditions
-- Pathway enrichment specific to bacterial systems
-- Custom visualizations for metabolic pathways
+# Load preprocessed data
+dds <- readRDS("data/processed/dds_object.rds")
+normalized_counts <- readRDS("data/processed/normalized_counts.rds")
+sample_metadata <- readRDS("data/processed/sample_metadata.rds")
 
-## Key Features
-1. Data preprocessing
-   - Quality control
-   - Normalization for bacterial RNA-seq
+######################
+#Quality Assessment
+#####################
 
-2. Differential Expression
-   - DESeq2 analysis
-   - Multiple condition comparisons
+# Sample correlation heatmap
+vsd <- vst(dds, blind=TRUE)
+sampleDists <- dist(t(assay(vsd)))
+pheatmap(as.matrix(sampleDists),
+         main="Sample Distance Matrix")
 
-3. Custom Analysis
-   - Operon-based analysis
-   - Metabolic pathway visualization
-   - Gene cluster analysis
-
-4. Visualizations
-   - Volcano plots
-   - Heatmaps of key pathways
-   - Custom bacterial genome plots
+# PCA plot
+plotPCA(vsd, intgroup="condition")
