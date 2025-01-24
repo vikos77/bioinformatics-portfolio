@@ -1,0 +1,7 @@
+# RNA-seq analysis
+projects/rna-seq-analysis/data/*
+!projects/rna-seq-analysis/data/.gitkeep
+projects/rna-seq-analysis/figures/*
+!projects/rna-seq-analysis/figures/.gitkeep
+projects/rna-seq-analysis/results/*
+!projects/rna-seq-analysis/results/.gitkeep
