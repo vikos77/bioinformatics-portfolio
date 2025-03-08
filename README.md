@@ -14,7 +14,7 @@ I'm a Bioinformatician with expertise in analyzing next-generation sequencing da
 ## Projects
 
 ### [RNA-seq Analysis: RmpA Regulation in E. coli](./projects/rna-seq-analysis)
-![RNA-seq Volcano Plot](./projects/rna-seq-analysis/figures/volcano_plot.png)
+![RNA-seq Volcano Plot](./projects/rna-seq-analysis/figures/volcano_plot_enhanced.png)
 
 Analysis of transcriptional changes in *E. coli* following RmpA overexpression. Key findings include upregulation of ribosomal genes and metabolic reprogramming associated with biofilm formation.
 
@@ -22,8 +22,9 @@ Analysis of transcriptional changes in *E. coli* following RmpA overexpression. 
 
 
 ## Education
-- **M.S./B.S. in Bioinformatics/Computational Biology**
+- **Masters in Bioinformatics/Computational Biology**
   Teesside University | 2024 - 2025
+  
 
 ## Publications
 - Takke A, Zarekar M, **Muthuraman V**, Ashar A, Patil K., et al (2022). Comparative study of Clinical features and Vaccination status in Omicron and non-Omicron infected patients during 3rd wave in Mumbai, India. Journal of Family Medicine and Primary Care, 11(10), 6135-6142.

@@ -99,7 +99,7 @@ Rscript R/preprocessing.R
 Rscript -e "rmarkdown::render('analysis.Rmd', output_file='../reports/analysis.html')"
 ```
 
-For complete methodology and detailed findings, see the [full analysis document](./analysis.html).
+For complete methodology and detailed findings, see the [full analysis document](https://vikos77.github.io/bioinformatics-portfolio/projects/rna-seq-analysis/analysis.html).
 
 ## Contact
 Email: vigneshwaran0594@gmail.com
