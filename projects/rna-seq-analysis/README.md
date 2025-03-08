@@ -2,7 +2,7 @@
 
 ## Overview
 
-<img src="figures/volcano_plot_enhanced.png" width="400" align="centre" alt="Volcano Plot"/>
+<img src="figures/volcano_plot_enhanced.png" width="800" align="centre" alt="Volcano Plot"/>
 
 This project investigates the transcriptional response of *Escherichia coli* to RmpA overexpression using RNA-Sequencing data. RmpA (Regulator of Mucoid Phenotype A) is a transcriptional regulator known to influence capsule production and biofilm formation in *Klebsiella pneumoniae*. By studying its effects in *E. coli*, we gain insights into conserved regulatory mechanisms across bacterial species.
 
@@ -18,7 +18,7 @@ This project investigates the transcriptional response of *Escherichia coli* to 
 
 ## Data Preprocessing
 
-<img src="figures/qc/pca_plot.pdf" width="350" align="centre" alt="PCA Plot"/>
+<img src="figures/qc/pca_plot.png" width="800" align="centre" alt="PCA Plot"/>
 
 The RNA-seq data analysis began with comprehensive preprocessing to ensure data quality and reliability:
 
@@ -41,7 +41,7 @@ The RNA-seq data analysis began with comprehensive preprocessing to ensure data 
 
 ### 1. Differential Expression
 
-<img src="figures/heatmap_enhanced.png" width="350" align="centre" alt="Heatmap of Top DE Genes"/>
+<img src="figures/heatmap_enhanced.png" width="800" align="centre" alt="Heatmap of Top DE Genes"/>
 
 * **1,515 genes** significantly differentially expressed (FDR < 0.05)
 * **769 genes (16%)** significantly up-regulated 
@@ -52,7 +52,7 @@ The RNA-seq data analysis began with comprehensive preprocessing to ensure data 
 
 ### 2. Pathway Enrichment
 
-<img src="figures/gsea_ridgeplot.png" width="400" align="centre" alt="GSEA Ridgeplot"/>
+<img src="figures/gsea_ridgeplot.png" width="800" align="centre" alt="GSEA Ridgeplot"/>
 
 | Pathway | Description | p-value | Status |
 |---------|-------------|---------|--------|
@@ -63,7 +63,7 @@ The RNA-seq data analysis began with comprehensive preprocessing to ensure data 
 
 GSEA analysis confirmed these findings, with strong enrichment scores for ribosomal and nucleotide sugar pathways.
 
-<img src="figures/top_gsea_pathway.png" width="400" alt="GSEA Plot for Ribosome Pathway"/>
+<img src="figures/top_gsea_pathway.png" width="800" alt="GSEA Plot for Ribosome Pathway"/>
 
 ### 3. Biological Significance
 
@@ -72,7 +72,7 @@ GSEA analysis confirmed these findings, with strong enrichment scores for riboso
 * **Metabolic Reprogramming**: Downregulation of fatty acid metabolism suggests energy redirection
 * **Potential Biofilm Connection**: Several biofilm-related genes show altered expression
 
-<img src="figures/kegg_enrichment_dotplot.png" width="400" alt="KEGG Pathway Dotplot"/>
+<img src="figures/kegg_enrichment_dotplot.png" width="800" alt="KEGG Pathway Dotplot"/>
 
 The transcriptional changes induced by RmpA overexpression align with its known role in *Klebsiella pneumoniae* as a regulator of capsule production and biofilm formation, suggesting conserved mechanisms across related bacterial species.
 
