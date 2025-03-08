@@ -1,0 +1,432 @@
+---
+title: "Transcriptional Analysis of RmpA-Mediated Regulation in Bacteria"
+author: "Vigneshwaran Muthuraman"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  error = FALSE
+)
+
+```
+
+## Introduction
+This analysis explores transcriptional changes in E. coli following RmpA overexpression, focusing on:
+
+- Differential gene expression
+- Pathway analysis
+- Connection to RmpA function
+
+## Setup and Data Loading
+```{r setup}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+# Load required libraries
+suppressPackageStartupMessages({
+library(DESeq2)              # For differential expression analysis
+library(tidyverse)           # For data manipulation and visualization
+library(pheatmap)            # For creating heatmaps
+library(EnhancedVolcano)     # For volcano plots
+library(pathview)            # For pathway visualization
+library(KEGGREST)            # For accessing KEGG pathway data
+library(enrichplot)          # For enrichment plots
+library(clusterProfiler)     # For pathway analysis
+library(org.EcK12.eg.db)     # For E. coli gene annotation
+library(here)                # For reliable file paths
+library(RColorBrewer)        # For color palettes
+library(ggrepel)             # For non-overlapping text labels
+})
+
+
+# Key directories
+
+data_dir <- here("projects", "rna-seq-analysis", "data", "processed")
+fig_dir <- here("projects", "rna-seq-analysis", "figures")
+results_dir <- here("projects", "rna-seq-analysis", "results")
+
+# Load preprocessed data
+dds_filtered <- readRDS("data/processed/dds_filtered_object.rds")
+normalized_counts <- readRDS("data/processed/normalized_counts.rds")
+```
+
+
+## Differential Expression Analysis
+
+```{r DESeq}
+
+
+# Run DESeq analysis
+dds_filtered <- DESeq(dds_filtered)
+
+# Get results
+res <- results(dds_filtered, 
+              contrast=c("condition", "rmpA_overexpression", "control"),
+              alpha=0.05)
+
+# Summary of results
+summary(res)
+
+# Create results dataframe
+res_df <- as.data.frame(res)
+res_df$gene_id <- rownames(res_df)
+
+
+```
+
+## Results Visualization
+
+
+```{r volcano-plot, fig.width=12, fig.height=10, dpi=300}
+
+# Create custom theme for consistency across plots
+my_theme <- theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    legend.title = element_text(size = 13),
+    legend.text = element_text(size = 11)
+  )
+
+# Create a volcano plot
+
+volcano_plot <- EnhancedVolcano(res_df,
+    lab = res_df$gene_id,
+    x = 'log2FoldChange',
+    y = 'padj',
+    title = 'Transcriptional Impact of RmpA Overexpression',
+    subtitle = 'E. coli K-12 strain',
+    pCutoff = 0.05,
+    FCcutoff = 1,
+    pointSize = 3.5,
+    labSize = 4.0,
+    # Only label top genes by significance and fold change
+    selectLab = rownames(res_df)[which(res_df$padj < 0.001 & abs(res_df$log2FoldChange) > 2)],
+    drawConnectors = TRUE,
+    widthConnectors = 0.5,
+    maxoverlapsConnectors = 10
+) 
+
+# Display the plot
+print(volcano_plot)
+
+# Save the plot
+ggsave(file.path(fig_dir, "volcano_plot_enhanced.png"), volcano_plot, width = 12, height = 10, dpi = 300)
+```
+
+##Enhanced Heatmap
+
+```{r heatmap, fig.width=10, fig.height=8, dpi=300}
+
+  # Filter significant genes
+  sig_genes <- res_df[which(res_df$padj < 0.05 & abs(res_df$log2FoldChange) > 1),]
+  
+  # Get top up-regulated genes
+  top_up <- head(sig_genes[order(-sig_genes$log2FoldChange),], 10)
+  
+  # Get top down-regulated genes
+  top_down <- head(sig_genes[order(sig_genes$log2FoldChange),], 10)
+
+
+# Create the combined gene list for heatmap
+top_20_genes <- rbind(top_up, top_down)
+
+# Create the expression matrix for heatmap
+heat_counts <- normalized_counts[rownames(normalized_counts) %in% rownames(top_20_genes),]
+
+# Check dimensions to verify data is ready
+cat("Heatmap data dimensions:", dim(heat_counts)[1], "genes by", dim(heat_counts)[2], "samples\n")
+
+# Check if the samples match expected pattern
+cat("Sample names:", colnames(heat_counts), "\n")
+
+
+# Create custom annotation
+annotation_col <- data.frame(
+  Condition = factor(c(rep("Control", 3), rep("RmpA", 3))),
+  row.names = colnames(heat_counts)
+)
+
+# Create custom color palettes
+heatmap_colors <- colorRampPalette(c("#2166AC", "#F7F7F7", "#B2182B"))(100)
+annotation_colors <- list(Condition = c(Control = "#4575B4", RmpA = "#D73027"))
+# Load gene information if not already loaded
+if (!exists("gene_info")) {
+  gene_info <- read.csv(file.path(data_dir, "gene_info.csv"))
+}
+
+# Create a simple mapping from gene IDs to names
+gene_names <- gene_info$gene_name
+names(gene_names) <- gene_info$gene_id
+
+# Create a simple mapping from gene IDs to names
+gene_id_to_name <- setNames(gene_info$gene_name, gene_info$gene_id)
+
+# Replace row names in heat_counts with gene names
+rownames(heat_counts) <- ifelse(rownames(heat_counts) %in% names(gene_id_to_name),
+                                 gene_id_to_name[rownames(heat_counts)],
+                                 rownames(heat_counts)) # Keep original ID if no match found
+
+# Verify the row names are updated
+print(rownames(heat_counts))
+
+# Use this version for the heatmap
+heatmap_plot <- pheatmap(heat_counts,
+         scale = "row",
+         show_rownames = TRUE,
+         cluster_cols = TRUE,
+         main = "Top 20 Differentially Expressed Genes",
+         annotation_col = annotation_col,
+         annotation_colors = annotation_colors,
+         color = heatmap_colors,
+         border_color = NA,
+         fontsize = 12,
+         fontsize_row = 10,
+         angle_col = 45)
+
+# Display the heatmap
+print(heatmap_plot)
+
+# Save with gene names
+pheatmap(heat_counts,
+         scale = "row",
+         show_rownames = TRUE,
+         cluster_cols = TRUE,
+         main = "Top 20 Differentially Expressed Genes",
+         annotation_col = annotation_col,
+         annotation_colors = annotation_colors,
+         color = heatmap_colors,
+         border_color = NA,
+         fontsize = 12,
+         fontsize_row = 10,
+         angle_col = 45,
+         filename = file.path(fig_dir, "heatmap_enhanced.png"))
+```
+
+
+## Pathway Analysis
+
+
+
+```{r pathway-analysis, fig.height=8, fig.width=12, message=FALSE, warning=FALSE, error=FALSE, dpi=300}
+
+suppressPackageStartupMessages({
+  library(clusterProfiler)
+  library(enrichplot)
+  library(ggplot2)
+})
+
+# Prepare gene list for pathway analysis
+sig_genes <- subset(res, padj < 0.05 & abs(log2FoldChange) > 1)
+cat("Using", nrow(sig_genes), "significant genes for pathway analysis\n")
+
+# GSEA Analysis
+tryCatch({
+  # Prepare ranked gene list
+  gene_list <- res$log2FoldChange
+  names(gene_list) <- rownames(res)
+  gene_list <- sort(gene_list, decreasing = TRUE)
+  
+  # Run GSEA
+  gsea_result <- gseKEGG(
+    geneList = gene_list,
+    organism = 'eco',
+    keyType = 'kegg',
+    pvalueCutoff = 0.1
+  )
+  
+  # Print ridge plot
+  if(!is.null(gsea_result) && nrow(gsea_result@result) > 0) {
+    ridgeplot <- ridgeplot(gsea_result) + 
+      ggtitle("GSEA: Gene Set Enrichment Analysis")
+    print(ridgeplot)
+    
+    # Save ridge plot
+    ggsave(file.path(fig_dir, "gsea_ridgeplot.png"), 
+           ridgeplot, width = 10, height = 8, dpi = 300)
+    
+    # Print GSEA plot for top pathway
+    top_pathway <- gsea_result@result$ID[1]
+    gsea_plot <- gseaplot2(gsea_result, geneSetID = top_pathway, 
+                          title = gsea_result@result$Description[1])
+    print(gsea_plot)
+    
+    # Save GSEA plot
+    ggsave(file.path(fig_dir, "top_gsea_pathway.png"), 
+           gsea_plot, width = 10, height = 8, dpi = 300)
+  }
+}, error = function(e) {
+  message("GSEA error: ", e$message)
+})
+
+#ORA Analysis 
+tryCatch({
+  # Run enrichKEGG quietly
+  kegg_enrich <- suppressWarnings(
+    enrichKEGG(
+      gene = rownames(sig_genes),
+      organism = 'eco',
+      keyType = 'kegg',
+      pvalueCutoff = 0.1
+    )
+  )
+  
+  if(!is.null(kegg_enrich) && nrow(kegg_enrich@result) > 0) {
+    # Print dotplot
+    dotplot <- dotplot(kegg_enrich, showCategory=20) + 
+      ggtitle("KEGG Pathway Enrichment")
+    print(dotplot)
+    
+    # Save dotplot
+    ggsave(file.path(fig_dir, "kegg_enrichment_dotplot.png"), 
+           dotplot, width = 10, height = 8, dpi = 300)
+    
+    # Print barplot
+    barplot <- barplot(kegg_enrich, showCategory=15) +
+      ggtitle("Top Enriched KEGG Pathways")
+    print(barplot)
+    
+    # Save barplot
+    ggsave(file.path(fig_dir, "kegg_enrichment_barplot.png"), 
+           barplot, width = 10, height = 8, dpi = 300)
+  }
+}, error = function(e) {
+  message("KEGG enrichment error: ", e$message)
+})
+
+
+```
+
+
+
+## Key Findings
+
+### Differential Expression Analysis
+
+The differential expression analysis comparing RmpA overexpression to control conditions revealed substantial transcriptional reprogramming:
+
+```{r de-summary, echo=FALSE}
+# Summary statistics of differential expression results
+de_summary <- data.frame(
+  Category = c("Total genes analyzed (after filtering)", 
+               "Genes with padj < 0.05", 
+               "Significantly up-regulated (padj < 0.05)", 
+               "Significantly down-regulated (padj < 0.05)",
+               "Significant genes with |log2FC| > 1 (used for pathway analysis)"),
+  Count = c(nrow(dds_filtered),
+            sum(res$padj < 0.05, na.rm = TRUE),
+            sum(res$padj < 0.05 & res$log2FoldChange > 0, na.rm = TRUE),
+            sum(res$padj < 0.05 & res$log2FoldChange < 0, na.rm = TRUE),
+            sum(res$padj < 0.05 & abs(res$log2FoldChange) > 1, na.rm = TRUE)),
+  Percentage = c(100,
+                 round(sum(res$padj < 0.05, na.rm = TRUE) / nrow(res) * 100, 1),
+                 round(sum(res$padj < 0.05 & res$log2FoldChange > 0, na.rm = TRUE) / nrow(res) * 100, 1),
+                 round(sum(res$padj < 0.05 & res$log2FoldChange < 0, na.rm = TRUE) / nrow(res) * 100, 1),
+                 round(sum(res$padj < 0.05 & abs(res$log2FoldChange) > 1, na.rm = TRUE) / nrow(res) * 100, 1))
+)
+
+# Create a table
+knitr::kable(de_summary, caption = "Summary of Differential Expression Analysis")
+```
+
+Our analysis revealed a balanced distribution of up- and down-regulated genes, with approximately 1,515 genes showing significant differential expression (adjusted p-value < 0.05). For subsequent pathway analyses, we applied an additional biological relevance filter (|log2FoldChange| > 1), resulting in 1,055 highly significant genes used for functional interpretation.
+
+### Gene Set Enrichment Analysis (GSEA)
+
+GSEA identified 11 significantly enriched pathways associated with RmpA overexpression, with distinct patterns of up- and down-regulation reflecting substantial metabolic and biosynthetic reprogramming.
+
+#### Upregulated Pathways:
+
+1. **Ribosome Biosynthesis (eco03010)**
+   - Strongest enrichment signal (NES = 2.56, p.adjust = 1.38e-04)
+   - 44 ribosomal protein genes coordinately upregulated
+   - Primary signature of RmpA overexpression
+   - Biological interpretation: Enhanced protein synthesis capacity likely supports increased metabolic activity, growth, and/or production of extracellular polymeric substances for biofilm formation
+
+2. **Fructose and Mannose Metabolism (eco00051)**
+   - Significant upregulation (NES = 2.43, p.adjust = 2.88e-04)
+   - Includes genes involved in UDP-glucose and related sugar-nucleotide biosynthesis
+   - Biological interpretation: Increased carbohydrate flux likely supports production of exopolysaccharide precursors required for biofilm matrix
+
+3. **Biosynthesis of Various Nucleotide Sugars (eco00541)**
+   - Strong enrichment (p.adjust = 1.15e-04 in ORA)
+   - 15 genes involved in nucleotide sugar metabolism
+   - Biological interpretation: Direct precursors for capsular polysaccharide and exopolysaccharide production, consistent with RmpA's role in capsule regulation
+
+4. **Exopolysaccharide Biosynthesis-Related Genes**
+   - Several genes involved in cell surface component synthesis upregulated
+   - Biological interpretation: Critical for bacterial attachment and biofilm formation, consistent with RmpA's known role in Klebsiella pneumoniae
+
+#### Downregulated Pathways:
+
+1. **Glyoxylate and Dicarboxylate Metabolism (eco00630)**
+   - Significant negative enrichment (NES = -2.49, p.adjust = 8.36e-04)
+   - 18 genes downregulated, including key TCA cycle-related enzymes
+   - Biological interpretation: Shift away from certain carbon utilization pathways, potentially reflecting metabolic adaptation to biofilm lifestyle
+
+2. **Fatty Acid Degradation (eco00071) and Metabolism (eco01212)**
+   - Strong negative enrichment (NES = -2.11 and -2.17, p.adjust = 0.018 and 0.013)
+   - 10 genes consistently downregulated across both pathways
+   - Biological interpretation: Decreased lipid catabolism suggests energy resource redirection, possibly conserving lipids for membrane remodeling during biofilm formation
+
+### Mechanistic Interpretation
+
+The coordinated pattern of pathway enrichment reveals a cohesive reprogramming of cellular physiology upon RmpA overexpression:
+
+1. **Enhanced Biosynthetic Capacity**
+   - Upregulation of ribosome components (protein synthesis)
+   - Increased nucleotide sugar production (precursors for extracellular structures)
+   - Redirection of carbohydrate metabolism toward structural polysaccharides
+
+2. **Metabolic Adaptations**
+   - Downregulation of central carbon metabolism pathways
+   - Reduced fatty acid catabolism
+   - Shift from planktonic to sessile-associated metabolic profile
+
+3. **Cell Surface Modifications**
+   - Multiple pathways linked to exopolysaccharide production
+   - Alterations in cell envelope composition
+   - Molecular foundation for biofilm matrix production
+
+4. **Regulatory Networks**
+   - RmpA appears to function as a master regulator of biofilm-associated gene expression
+   - Coordinated impact on multiple cellular subsystems
+   - Affects approximately 22% of the E. coli transcriptome
+
+### Comparison to Known RmpA Function in K. pneumoniae
+
+In Klebsiella pneumoniae, RmpA (Regulator of Mucoid Phenotype A) is established as a key regulator of capsule production and virulence. Our findings in E. coli suggest conservation of core functions:
+
+1. Both systems show upregulation of nucleotide sugar biosynthesis
+2. Both demonstrate changes in central carbon metabolism
+3. Both exhibit patterns consistent with enhanced extracellular matrix production
+
+However, our data in E. coli reveals additional impacts on ribosomal biogenesis and fatty acid metabolism not previously emphasized in K. pneumoniae studies. This suggests RmpA may have broader regulatory effects than previously appreciated.
+
+### Limitations and Considerations
+
+1. **Transcriptional vs. Post-transcriptional Regulation**
+   - Our analysis captures transcriptional changes only
+   - Post-translational modifications and protein activity regulation not assessed
+
+2. **Heterologous Expression System**
+   - RmpA is not naturally expressed in E. coli
+   - Some observed effects may differ from native K. pneumoniae context
+
+3. **Direct vs. Indirect Effects**
+   - Distinguishing primary from secondary regulatory impacts requires additional studies
+   - ChIP-seq would help identify direct RmpA binding sites
+
+### Conclusions
+
+The transcriptional signature of RmpA overexpression in E. coli reveals a coordinated reprogramming of cellular physiology, with strong upregulation of ribosomal genes and nucleotide sugar biosynthesis pathways, alongside downregulation of certain metabolic pathways. These changes align with a model where RmpA drives a shift toward a biofilm-forming phenotype, characterized by enhanced protein synthesis, increased production of extracellular matrix components, and metabolic adaptations supporting this transition.
+
+These findings enhance our understanding of RmpA's role as a transcriptional regulator and highlight its potential as a target for anti-biofilm therapeutic strategies. The conservation of RmpA's function between E. coli and K. pneumoniae suggests fundamental mechanisms of biofilm regulation that may be broadly applicable across Enterobacteriaceae.

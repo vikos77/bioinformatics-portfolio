@@ -1,0 +1,14 @@
+echo "# OS files
+.DS_Store
+Thumbs.db
+
+# R specific
+.Rhistory
+.RData
+.Rproj.user/
+
+# Large data files
+*.fastq
+*.fastq.gz
+*.bam
+*.sam" > .gitignore

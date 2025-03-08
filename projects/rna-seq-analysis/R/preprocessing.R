@@ -1,0 +1,348 @@
+#################################################
+# RNA-seq Data Preprocessing Script
+# Project: E. coli RmpA Regulation Analysis
+# Author: Vigneshwaran Muthuraman
+# Last modified: March 8, 2025
+#################################################
+
+# Load required libraries
+suppressPackageStartupMessages({
+  library(DESeq2)
+  library(tidyverse)
+  library(pheatmap)
+  library(GEOquery)
+  library(readxl)
+  library(R.utils)
+  library(here) 
+})
+
+
+# Log function for tracking analysis steps
+log_message <- function(message) {
+  timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+  cat(paste0("[", timestamp, "] ", message, "\n"))
+}
+
+log_message("Starting RNA-seq preprocessing")
+
+
+# Set up directories using relative paths
+output_data_dir <- "data/processed"
+output_qc_results_dir <- "results/qc"
+output_qc_figures_dir <- "figures/qc"
+output_raw_data_dir <- "data/raw"
+
+# Create output directories if they don't exist
+dir.create(output_raw_data_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(output_data_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(output_qc_results_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(output_qc_figures_dir, recursive = TRUE, showWarnings = FALSE)
+
+log_message <- function(message) {
+  cat(paste0("[", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "] ", message, "\n"))
+}
+
+log_message("Starting RNA-seq preprocessing")
+log_message("Created output directories")
+
+###################
+# Data Download
+###################
+
+log_message("Downloading data from GEO (GSE286114)")
+
+# Check if data already exists to avoid re-downloading
+if (!file.exists(file.path(output_raw_data_dir, "GSE286114_family.soft.gz"))) {
+  tryCatch({
+    # Set GEOquery options to use system temp dir
+    options(GEOquery.inmemory=FALSE)
+    
+    log_message("Attempting to download GEO data...")
+    gse <- getGEO("GSE286114", GSEMatrix = TRUE, destdir = output_raw_data_dir)
+    metadata <- pData(phenoData(gse[[1]]))
+    log_message("Successfully downloaded GSE286114 matrix files")
+    
+    # Try to get supplementary files
+    log_message("Downloading supplementary files...")
+    getGEOSuppFiles("GSE286114", baseDir = output_raw_data_dir)
+    log_message("Data download successful")
+  }, error = function(e) {
+    log_message(paste("ERROR: Data download failed:", e$message))
+    log_message("Suggesting manual download...")
+    message("Please manually download data from GEO: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE286114")
+    message("Save files to the 'data/raw' directory, then run this script again.")
+    stop("Download failed. See error message and manual download instructions above.")
+  })
+} else {
+  log_message("GEO data already exists, using cached version")
+  gse <- getGEO("GSE286114", GSEMatrix = TRUE, destdir = output_raw_data_dir)
+  metadata <- pData(phenoData(gse[[1]]))
+}
+###################
+# Data Import
+###################
+
+log_message("Importing expression data")
+
+# Create temporary file and decompress
+temp_file <- tempfile(fileext = ".xls")
+raw_fpkm_file_gz <- file.path(output_raw_data_dir, "GSE286114", "GSE286114_gene_fpkm_RmpA_Escherichia.xls.gz")
+
+if (file.exists(raw_fpkm_file_gz)) {
+  tryCatch({
+    R.utils::gunzip(raw_fpkm_file_gz, destname = temp_file, remove = FALSE)
+    # Read the Excel file
+    counts_data <- read_excel(temp_file)
+    log_message(paste("Successfully imported data with", nrow(counts_data), "genes"))
+  }, error = function(e) {
+    log_message(paste("ERROR: File import failed:", e$message))
+    stop("File import failed. Please check file integrity.")
+  })
+} else {
+  stop("File not found: Ensure GEO download was successful. Expected file: ", raw_fpkm_file_gz)
+}
+
+# Examine the data structure
+log_message(paste("Data dimensions:", paste(dim(counts_data), collapse = " x ")))
+log_message(paste("Columns:", paste(colnames(counts_data), collapse = ", ")))
+
+# Clean up column names and extract expression data
+expression_data <- counts_data %>%
+  select(gene_id, PLB1K1, PLB1K2, PLB1K3, `PLB1K-rmpA1`, `PLB1K-rmpA2`, `PLB1K-rmpA3`) %>%
+  mutate(across(-gene_id, as.numeric)) %>%
+  column_to_rownames("gene_id")
+
+# Create sample metadata with more information
+sample_metadata <- data.frame(
+  sample_id = c("PLB1K1", "PLB1K2", "PLB1K3", "PLB1K-rmpA1", "PLB1K-rmpA2", "PLB1K-rmpA3"),
+  condition = factor(c(rep("control", 3), rep("rmpA_overexpression", 3)), 
+                     levels = c("control", "rmpA_overexpression")),
+  replicate = rep(1:3, 2),
+  row.names = c("PLB1K1", "PLB1K2", "PLB1K3", "PLB1K-rmpA1", "PLB1K-rmpA2", "PLB1K-rmpA3")
+)
+
+log_message("Created sample metadata")
+
+# Save sample metadata to processed data directory
+saveRDS(sample_metadata, file.path(output_data_dir, "sample_metadata.rds"))
+
+# Save gene information separately with descriptions
+gene_info <- counts_data %>%
+  select(gene_id, gene_name, gene_chr, gene_start, gene_end, 
+         gene_strand, gene_length, gene_biotype, gene_description)
+
+write_csv(gene_info, file.path(output_data_dir, "gene_info.csv"))
+log_message("Saved gene annotation information")
+
+###################
+# Create DESeq2 Object
+###################
+
+log_message("Creating DESeq2 object")
+
+# Convert FPKM to counts (approximately)
+# Round to nearest integer as DESeq2 requires count data
+counts_matrix <- round(expression_data * 1000)
+
+# Create DESeq2 dataset
+dds <- DESeqDataSetFromMatrix(
+  countData = counts_matrix,
+  colData = sample_metadata,
+  design = ~ condition
+)
+
+# Look at the distribution of counts
+total_counts_per_gene <- rowSums(counts(dds))
+log_message(paste("Count summary before filtering:",
+                  "Min:", min(total_counts_per_gene),
+                  "Median:", median(total_counts_per_gene),
+                  "Max:", max(total_counts_per_gene)))
+
+# Create count distribution plots
+pdf(file.path(output_qc_figures_dir, "count_distributions.pdf"))
+par(mfrow=c(2,2))
+
+# Plot raw count distribution
+hist(log10(total_counts_per_gene + 1),
+     breaks = 50,
+     main = "Distribution of Total Counts per Gene\n(Before Filtering)",
+     xlab = "log10(Total Counts + 1)",
+     col = "steelblue",
+     border = "white")
+
+# Plot sample counts
+boxplot(log10(counts(dds) + 1),
+        main = "Log10 Counts per Sample\n(Before Filtering)",
+        ylab = "log10(counts + 1)",
+        las = 2,
+        cex.axis = 0.8,  # Reduce font size
+        col = "lightblue",
+        names = gsub("PLB1K-", "R", colnames(dds)))  # Abbreviate long names
+
+
+# Applying filtering 
+log_message("Applying count filtering")
+
+# Data-driven filtering: keep genes with at least 10 counts in at least 3 samples
+min_count <- 10  # minimum counts per sample
+min_samples <- 3  # minimum number of samples with sufficient counts
+keep <- rowSums(counts(dds) >= min_count) >= min_samples
+dds_filtered <- dds[keep,]
+
+# Log filtering results
+log_message(paste("Filtering results:",
+                  "Total genes:", nrow(dds),
+                  "Genes kept:", sum(keep),
+                  "Genes filtered out:", nrow(dds) - sum(keep),
+                  paste0("(", round((nrow(dds) - sum(keep))/nrow(dds) * 100, 2), "%)")))
+
+# Plot filtered count distribution
+total_counts_filtered <- rowSums(counts(dds_filtered))
+hist(log10(total_counts_filtered + 1),
+     breaks = 50,
+     main = "Distribution of Total Counts per Gene\n(After Filtering)",
+     xlab = "log10(Total Counts + 1)",
+     col = "darkgreen",
+     border = "white")
+
+# Plot filtered sample counts
+boxplot(log10(counts(dds_filtered) + 1),
+        main = "Log10 Counts per Sample\n(After Filtering)",
+        ylab = "log10(counts + 1)",
+        las = 2,
+        cex.axis = 0.8,
+        col = "lightgreen",
+        names = gsub("PLB1K-", "R", colnames(dds)))
+
+dev.off()
+log_message("Generated count distribution plots")
+
+# Save filtering statistics to results/qc
+filtering_stats <- data.frame(
+  total_genes = nrow(dds),
+  genes_kept = sum(keep),
+  genes_filtered = nrow(dds) - sum(keep),
+  percentage_filtered = round((nrow(dds) - sum(keep))/nrow(dds) * 100, 2)
+)
+
+write.csv(filtering_stats, file.path(output_qc_results_dir, "filtering_statistics.csv"), 
+          row.names = FALSE)
+
+# Save filtered DESeq object to processed data directory
+saveRDS(dds_filtered, file.path(output_data_dir, "dds_filtered_object.rds"))
+log_message("Saved filtered DESeq2 object")
+
+###################
+# QC Plots
+###################
+
+log_message("Generating QC plots for filtered data")
+
+# Create QC plots for filtered data and save to figures/qc
+pdf(file.path(output_qc_figures_dir, "filtered_data_qc.pdf"))
+
+# Sample correlation heatmap
+vsd <- vst(dds_filtered, blind = TRUE)
+sampleDists <- dist(t(assay(vsd)))
+
+# Annotate samples by condition for the heatmap
+annotation_col <- data.frame(
+  Condition = sample_metadata$condition,
+  row.names = rownames(sample_metadata)
+)
+
+# Heatmap showing sample-to-sample distances based on gene expression
+# Used to check for overall sample relationships and potential outliers
+pheatmap(
+  as.matrix(sampleDists),
+  main = "Sample Distance Matrix (Filtered Data)",
+  annotation_col = annotation_col,
+  annotation_colors = list(
+    Condition = c(control = "blue", rmpA_overexpression = "red")
+  ),
+  clustering_distance_rows = sampleDists,
+  clustering_distance_cols = sampleDists,
+  show_rownames = TRUE,
+  show_colnames = TRUE
+)
+
+dev.off()
+# Create a separate PDF for the PCA plot to ensure it displays properly
+pdf(file.path(output_qc_figures_dir, "pca_plot.pdf"), width=8, height=7)
+
+# Create enhanced PCA plot
+vsd <- vst(dds_filtered, blind = TRUE)
+pcaData <- plotPCA(vsd, intgroup = "condition", returnData = TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+
+# Principal Component Analysis (PCA) plot 
+pca_plot <- ggplot(pcaData, aes(PC1, PC2, color = condition, shape = condition)) +
+  geom_point(size = 5) +
+  xlab(paste0("PC1: ", percentVar[1], "% variance")) +
+  ylab(paste0("PC2: ", percentVar[2], "% variance")) +
+  ggtitle("PCA Plot of RNA-seq Data") +
+  theme_minimal() +
+  scale_color_manual(values = c("control" = "blue", "rmpA_overexpression" = "red")) +
+  theme(
+    legend.position = "right",
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+
+print(pca_plot)
+dev.off()
+
+# Save the PCA data for future reference
+saveRDS(pcaData, file.path(output_data_dir, "pca_data.rds"))
+
+###################
+# Normalization
+###################
+
+log_message("Normalizing count data")
+
+# Perform normalization
+dds_filtered <- estimateSizeFactors(dds_filtered)
+normalized_counts <- counts(dds_filtered, normalized = TRUE)
+
+# Create boxplots to visualize normalization effect
+pdf(file.path(output_qc_figures_dir, "normalization_effect.pdf"))
+par(mfrow = c(1, 2))
+
+# Boxplot of log2-transformed raw counts (filtered data) before normalization
+# Shows potential differences in count distributions across samples
+boxplot(
+  log2(counts(dds_filtered)),
+  main = "Raw counts (filtered)",
+  ylab = "log2(counts)",
+  las = 2,  # Vertical labels
+  cex.axis = 0.8,  # Smaller font
+  col = "lightblue",
+  names = gsub("PLB1K-", "R", colnames(dds_filtered))  # Abbreviate
+)
+
+# Boxplot of log2-transformed normalized counts
+# Demonstrates the effect of normalization in making count distributions more comparable
+boxplot(
+  log2(normalized_counts),
+  main = "Normalized counts",
+  ylab = "log2(counts)",
+  las = 2,
+  cex.axis = 0.8,
+  col = "lightgreen",
+  names = gsub("PLB1K-", "R", colnames(normalized_counts))
+)
+
+dev.off()
+log_message("Generated normalization effect plots")
+
+# Save normalized counts 
+saveRDS(normalized_counts, file.path(output_data_dir, "normalized_counts.rds"))
+log_message("Saved normalized counts")
+
+# Save processing info (session info) to results/qc
+writeLines(capture.output(sessionInfo()), file.path(output_qc_results_dir, "session_info.txt"))
+log_message("Saved session info")
+
+log_message("Preprocessing complete!")
