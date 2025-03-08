@@ -1,92 +1,105 @@
-# Project: Transcriptional Analysis of RmpA-Mediated Regulation in Bacteria
+# Transcriptional Analysis of RmpA-Mediated Regulation in Bacteria
 
-## Introduction
+## Overview
 
-This project investigates the transcriptional response of *Escherichia coli* to RmpA overexpression using RNA-Sequencing (RNA-Seq) data. RmpA (Regulator of Mucoid Phenotype A) is a bacterial protein known to play a role in [mention RmpA's known/suspected functions, e.g., virulence, capsule synthesis, biofilm formation in *Klebsiella pneumoniae*]. In this study, we analyze RNA-Seq data from *E. coli* cells with induced RmpA overexpression compared to control cells to identify genes and pathways regulated by RmpA in *E. coli*. This analysis aims to provide insights into the potential roles of RmpA in *E. coli*, particularly concerning its influence on bacterial physiology and biofilm-related processes.
+<img src="figures/volcano_plot_enhanced.png" width="400" align="right" alt="Volcano Plot"/>
+
+This project investigates the transcriptional response of *Escherichia coli* to RmpA overexpression using RNA-Sequencing data. RmpA (Regulator of Mucoid Phenotype A) is a transcriptional regulator known to influence capsule production and biofilm formation in *Klebsiella pneumoniae*. By studying its effects in *E. coli*, we gain insights into conserved regulatory mechanisms across bacterial species.
+
+## Workflow
+
+![Analysis Workflow](figures/workflow_diagram.png)
+
+1. **Data Acquisition**: RNA-seq dataset (GSE286114) from GEO database
+2. **Preprocessing**: Quality control, filtering, and normalization
+3. **Differential Expression Analysis**: DESeq2 analysis comparing RmpA overexpression vs. control
+4. **Pathway Analysis**: KEGG pathway enrichment using clusterProfiler
+5. **Visualization**: Volcano plots, heatmaps, and pathway diagrams
+
+## Data Preprocessing
+
+<img src="figures/qc/pca_plot.png" width="350" align="right" alt="PCA Plot"/>
+
+The RNA-seq data analysis began with comprehensive preprocessing to ensure data quality and reliability:
+
+### Data Acquisition and Quality Control
+* **Data Source**: RNA-seq dataset GSE286114 from GEO database
+* **Sample Information**: 3 biological replicates per condition
+* **Initial QC**: Raw count distributions were examined to identify potential outliers and assess sequencing depth
+
+### Filtering and Normalization
+* **Filtering Strategy**: Low-count genes were removed (minimum 10 counts in at least 3 samples)
+* **Result**: 4,781 genes retained (95.4% of initial genes)
+* **Normalization**: DESeq2 size factor normalization to account for library size differences
+
+### Quality Assessment 
+* **PCA Analysis**: Clear separation between conditions along PC1 (70% variance)
+* **Sample Correlation**: High within-group correlation demonstrating good reproducibility
+* **Biological Signal**: Strong transcriptional signature of RmpA overexpression evident in exploratory analysis
 
 ## Key Findings
 
-*   **Significant Differential Gene Expression:** Transcriptional profiling revealed significant changes in gene expression upon RmpA overexpression. We identified [Number of Up-regulated Genes - **FILL IN FROM ANALYSIS REPORT**] genes significantly up-regulated and [Number of Down-regulated Genes - **FILL IN FROM ANALYSIS REPORT**] genes significantly down-regulated (FDR < 0.05, |log2FoldChange| > 1).
-*   **Ribosome Biogenesis Up-regulation:** Pathway analysis (KEGG ORA and GSEA) identified a strong enrichment of the Ribosome pathway, suggesting RmpA promotes increased protein synthesis.
-*   **Nucleotide Sugar Biosynthesis Pathway Changes:**  The "Biosynthesis of various nucleotide sugars" pathway was also enriched, indicating a potential role for RmpA in regulating exopolysaccharide (EPS) production, a key component of bacterial biofilms.
-*   **Metabolic Shifts:** Down-regulation of genes in 'Fatty acid degradation' and 'Glyoxylate and dicarboxylate metabolism' pathways suggests RmpA overexpression may induce metabolic reprogramming in *E. coli* cells.
+### 1. Differential Expression
 
-**For a detailed analysis, including visualizations and complete pathway analysis results, please see the [Transcriptional Analysis Report](reports/analysis.html).**
+<img src="figures/heatmap_enhanced.png" width="350" align="right" alt="Heatmap of Top DE Genes"/>
 
-## Preprocessing Analysis
+* **1,515 genes** significantly differentially expressed (FDR < 0.05)
+* **769 genes (16%)** significantly up-regulated 
+* **746 genes (16%)** significantly down-regulated
+* **1,055 genes** met stricter biological relevance criteria (|log2FC| > 1) for pathway analysis
 
-The `R/preprocess_data.R` script performs the initial steps of the RNA-Seq data analysis, including:
+**Note on Gene Filtering:** While initial differential expression analysis identified 1,515 genes with adjusted p-value < 0.05, pathway analysis focused on 1,055 genes that met both statistical significance (padj < 0.05) AND biological relevance criteria (|log2FoldChange| > 1).
 
-*   **Data Download:**  Downloads the raw RNA-Seq dataset GSE286114 from the Gene Expression Omnibus (GEO).
-*   **Data Import:** Imports the gene expression data (FPKM values) from the downloaded Excel file and creates a DESeq2 dataset object.
-*   **Data Filtering:**
-    *   Genes with very low counts across samples are filtered out to reduce noise and improve the power of differential expression analysis.
-    *   **Filtering Rationale:** Low-count genes are often unreliable and can introduce noise into downstream analyses. Filtering helps to remove these noisy genes, focusing on genes with more robust and biologically meaningful expression changes.
-    *   Filtering statistics (number of genes kept/filtered):
+### 2. Pathway Enrichment
 
-       ```
-       total_genes genes_kept genes_filtered
-     1        5013       4781            232
-       ```
+<img src="figures/gsea_ridgeplot.png" width="400" align="right" alt="GSEA Ridgeplot"/>
 
-    *   Filtering statistics are saved to `results/qc/filtering_statistics.csv`.
-    *   Boxplots visualizing count distributions **before and after filtering** are saved to `figures/qc/count_boxplots_filtering_effect.png` to **demonstrate the effect of filtering on data distribution.**
+| Pathway | Description | p-value | Status |
+|---------|-------------|---------|--------|
+| eco03010 | Ribosome | 5.01e-11 | Upregulated |
+| eco00541 | Biosynthesis of nucleotide sugars | 2.58e-06 | Upregulated |
+| eco00630 | Glyoxylate and dicarboxylate metabolism | 3.74e-03 | Downregulated |
+| eco00071 | Fatty acid degradation | 3.38e-04 | Downregulated |
 
-    **Visualization of Count Distribution After Filtering:**
-    ![Boxplot of log2 counts after filtering](figures/qc/count_boxplots_filtering_effect_after.png)
+GSEA analysis confirmed these findings, with strong enrichment scores for ribosomal and nucleotide sugar pathways.
 
-   *   **Quality Control (QC):**
-        *   **Sample Correlation Heatmap:**  A heatmap of sample-to-sample distances is generated to assess overall sample relationships and identify potential outliers. Saved to `figures/qc/filtered_data_qc.pdf`.
-        *   **Principal Component Analysis (PCA):** PCA is performed to visualize sample clustering based on gene expression and check if samples group according to the experimental condition (control vs. RmpA overexpression). Saved to `figures/qc/filtered_data_qc.pdf`.
+<img src="figures/top_gsea_pathway.png" width="400" alt="GSEA Plot for Ribosome Pathway"/>
 
-    **PCA Plot of Filtered Data:**
-    ![PCA Plot of Filtered Data](figures/qc/filtered_data_qc.pdf)
+### 3. Biological Significance
 
-   *   **Normalization:**
-        *   Gene expression counts are normalized using the DESeq2 normalization method to account for differences in library size and sequencing depth between samples.
-        *   Boxplots visualizing count distributions before and after normalization are saved to `figures/qc/count_boxplots_normalization_effect.pdf`.
+* **Ribosome Biogenesis**: Strong upregulation suggests increased protein synthesis capacity
+* **Exopolysaccharide Production**: Changes in nucleotide sugar biosynthesis pathways indicate altered cell surface properties
+* **Metabolic Reprogramming**: Downregulation of fatty acid metabolism suggests energy redirection
+* **Potential Biofilm Connection**: Several biofilm-related genes show altered expression
 
-    **Visualization of Count Distribution After Normalization:**
+<img src="figures/kegg_enrichment_dotplot.png" width="400" alt="KEGG Pathway Dotplot"/>
 
-    ![Boxplots of Count Distribution After Normalization](figures/qc/count_boxplots_normalization_effect.png)
+The transcriptional changes induced by RmpA overexpression align with its known role in *Klebsiella pneumoniae* as a regulator of capsule production and biofilm formation, suggesting conserved mechanisms across related bacterial species.
 
-   *   **Data Saving:** Processed data objects (DESeq2 object, normalized counts, sample metadata, gene information) are saved as RDS files in the `data/processed/` directory for use in the main analysis report.
-   *   **Session Information:**  The R session information (R version and package versions) is saved to `results/qc/session_info.txt` for reproducibility.
+## Reproduction
 
+### Prerequisites
+- R (version 4.0+)
+- Required packages: DESeq2, tidyverse, pheatmap, EnhancedVolcano, pathview, clusterProfiler
 
-## Tools and Technologies Used
+### Running the Analysis
+1. Clone this repository
+```bash
+git clone https://github.com/yourusername/bioinformatics-portfolio.git
+cd bioinformatics-portfolio/projects/rna-seq-analysis
+```
 
-*   **R:** Statistical computing environment
-*   **DESeq2:**  Differential gene expression analysis
-*   **clusterProfiler:** KEGG pathway over-representation analysis and gene set enrichment analysis
-*   **pathview:** KEGG pathway visualization
-*   **pheatmap, EnhancedVolcano, ggplot2, tidyverse:** R packages for data visualization
-*   **KEGGREST:**  KEGG database access in R
-*   **org.EcK12.eg.db:** *E. coli* K12 annotation database
+2. Run the preprocessing script
+```bash
+Rscript R/preprocessing.R
+```
 
-## Project Structure
+3. Generate the analysis report
+```bash
+Rscript -e "rmarkdown::render('analysis.Rmd', output_file='../reports/analysis.html')"
+```
 
-rna-seq-analysis/
-├── data/
-│ └── processed/ # Processed RNA-Seq data (RDS objects, counts)
-│ ├── dds_filtered_object.rds
-│ └── normalized_counts.rds
-│ └── raw/ # (Empty) Placeholder for raw data
-│ └── README.md # Explanation of raw data storage
-├── R/
-│ └── analysis.Rmd # R Markdown report for RNA-Seq analysis
-│ └── preprocess_data.R # R script for data preprocessing
-├── reports/ # Generated reports
-│ └── analysis.html # HTML report of RNA-Seq analysis
-├── results/ # Analysis results summaries and outputs
-│ └── qc/ # Quality control results
-│ ├── filtering_statistics.csv
-│ └── filtered_data_qc.pdf
-│ └── count_boxplots_filtering_effect_before.png
-│ └── count_boxplots_filtering_effect_after.png
-│ └── count_boxplots_normalization_effect.pdf
-│ └── pathway/ # Pathway analysis results
-│ ├── kegg_gsea_results.csv
-│ ├── kegg_ora_results.csv
-│ └── pathway_enrichment_results.csv
-└── README.md # Project overview and key findings
+For complete methodology and detailed findings, see the [full analysis document](./analysis.html).
+
+## Contact
+Email: vigneshwaran0594@gmail.com

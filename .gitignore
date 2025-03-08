@@ -1,7 +1,14 @@
-# RNA-seq analysis
-projects/rna-seq-analysis/data/*
-!projects/rna-seq-analysis/data/.gitkeep
-projects/rna-seq-analysis/figures/*
-!projects/rna-seq-analysis/figures/.gitkeep
-projects/rna-seq-analysis/results/*
-!projects/rna-seq-analysis/results/.gitkeep
+echo "# OS files
+.DS_Store
+Thumbs.db
+
+# R specific
+.Rhistory
+.RData
+.Rproj.user/
+
+# Large data files
+*.fastq
+*.fastq.gz
+*.bam
+*.sam" > .gitignore
