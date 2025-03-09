@@ -2,13 +2,17 @@
 
 ## Overview
 
-<img src="figures/volcano_plot_enhanced.png" width="600" align="centre" alt="Volcano Plot"/>
+<p align="center">
+  <img src="figures/volcano_plot_enhanced.png" width="700" alt="Volcano Plot"/>
+</p>
 
 This project investigates the transcriptional response of *Escherichia coli* to RmpA overexpression using RNA-Sequencing data. RmpA (Regulator of Mucoid Phenotype A) is a transcriptional regulator known to influence capsule production and biofilm formation in *Klebsiella pneumoniae*. By studying its effects in *E. coli*, we gain insights into conserved regulatory mechanisms across bacterial species.
 
 ## Workflow
 
-![Analysis Workflow](figures/workflow_diagram.png)
+<p align="center">
+  <img src="figures/workflow_diagram.png" width="800" alt="Analysis Workflow"/>
+</p>
 
 1. **Data Acquisition**: RNA-seq dataset (GSE286114) from GEO database
 2. **Preprocessing**: Quality control, filtering, and normalization
@@ -18,8 +22,6 @@ This project investigates the transcriptional response of *Escherichia coli* to 
 
 ## Data Preprocessing
 
-<img src="figures/qc/pca_plot.png" width="600" align="centre" alt="PCA Plot"/>
-
 The RNA-seq data analysis began with comprehensive preprocessing to ensure data quality and reliability:
 
 ### Data Acquisition and Quality Control
@@ -27,21 +29,39 @@ The RNA-seq data analysis began with comprehensive preprocessing to ensure data 
 * **Sample Information**: 3 biological replicates per condition
 * **Initial QC**: Raw count distributions were examined to identify potential outliers and assess sequencing depth
 
+<p align="center">
+  <img src="figures/qc/count_distributions.png" width="700" alt="Count Distributions"/>
+  <br><em>Distribution of gene counts before and after filtering</em>
+</p>
+
 ### Filtering and Normalization
 * **Filtering Strategy**: Low-count genes were removed (minimum 10 counts in at least 3 samples)
 * **Result**: 4,781 genes retained (95.4% of initial genes)
 * **Normalization**: DESeq2 size factor normalization to account for library size differences
+
+<p align="center">
+  <img src="figures/qc/filtered_data_qc.png" width="700" alt="Sample Correlation Heatmap"/>
+  <br><em>Sample correlation heatmap showing clear separation between conditions</em>
+</p>
 
 ### Quality Assessment 
 * **PCA Analysis**: Clear separation between conditions along PC1 (70% variance)
 * **Sample Correlation**: High within-group correlation demonstrating good reproducibility
 * **Biological Signal**: Strong transcriptional signature of RmpA overexpression evident in exploratory analysis
 
+<p align="center">
+  <img src="figures/qc/pca_plot.png" width="600" alt="PCA Plot"/>
+  <br><em>Principal Component Analysis showing distinct clustering by experimental condition</em>
+</p>
+
 ## Key Findings
 
 ### 1. Differential Expression
 
-<img src="figures/heatmap_enhanced.png" width="600" align="centre" alt="Heatmap of Top DE Genes"/>
+<p align="center">
+  <img src="figures/heatmap_enhanced.png" width="700" alt="Heatmap of Top DE Genes"/>
+  <br><em>Heatmap of top 20 differentially expressed genes showing distinct expression patterns</em>
+</p>
 
 * **1,515 genes** significantly differentially expressed (FDR < 0.05)
 * **769 genes (16%)** significantly up-regulated 
@@ -52,7 +72,10 @@ The RNA-seq data analysis began with comprehensive preprocessing to ensure data 
 
 ### 2. Pathway Enrichment
 
-<img src="figures/gsea_ridgeplot.png" width="600" align="centre" alt="GSEA Ridgeplot"/>
+<p align="center">
+  <img src="figures/gsea_ridgeplot.png" width="700" alt="GSEA Ridgeplot"/>
+  <br><em>GSEA ridgeplot showing enrichment of key pathways</em>
+</p>
 
 | Pathway | Description | p-value | Status |
 |---------|-------------|---------|--------|
@@ -63,16 +86,22 @@ The RNA-seq data analysis began with comprehensive preprocessing to ensure data 
 
 GSEA analysis confirmed these findings, with strong enrichment scores for ribosomal and nucleotide sugar pathways.
 
-<img src="figures/top_gsea_pathway.png" width="600" alt="GSEA Plot for Ribosome Pathway"/>
+<p align="center">
+  <img src="figures/top_gsea_pathway.png" width="700" alt="GSEA Plot for Ribosome Pathway"/>
+  <br><em>Detailed GSEA enrichment plot for the ribosome pathway</em>
+</p>
 
 ### 3. Biological Significance
+
+<p align="center">
+  <img src="figures/kegg_enrichment_dotplot.png" width="700" alt="KEGG Pathway Dotplot"/>
+  <br><em>Dotplot of enriched KEGG pathways, with dot size indicating gene count and color indicating significance</em>
+</p>
 
 * **Ribosome Biogenesis**: Strong upregulation suggests increased protein synthesis capacity
 * **Exopolysaccharide Production**: Changes in nucleotide sugar biosynthesis pathways indicate altered cell surface properties
 * **Metabolic Reprogramming**: Downregulation of fatty acid metabolism suggests energy redirection
 * **Potential Biofilm Connection**: Several biofilm-related genes show altered expression
-
-<img src="figures/kegg_enrichment_dotplot.png" width="600" alt="KEGG Pathway Dotplot"/>
 
 The transcriptional changes induced by RmpA overexpression align with its known role in *Klebsiella pneumoniae* as a regulator of capsule production and biofilm formation, suggesting conserved mechanisms across related bacterial species.
 
@@ -101,10 +130,6 @@ Rscript -e "rmarkdown::render('analysis.Rmd', output_file='../reports/analysis.h
 
 For complete methodology and detailed findings, see the [full analysis document](https://vikos77.github.io/bioinformatics-portfolio/projects/rna-seq-analysis/analysis.html).
 
-## Contact
-Email: vigneshwaran0594@gmail.com
-
-
 ## References
 
 ### Dataset
@@ -130,3 +155,6 @@ Email: vigneshwaran0594@gmail.com
 8. Browning DF, Butala M, Busby SJW. (2019). Bacterial Transcription Factors: Regulation by Pick "N" Mix. Journal of Molecular Biology, 431(20), 4067-4077. https://doi.org/10.1016/j.jmb.2019.04.011
 
 9. Beloin C, Roux A, Ghigo JM. (2008). Escherichia coli biofilms. Current Topics in Microbiology and Immunology, 322, 249-289. https://doi.org/10.1007/978-3-540-75418-3_12
+
+## Contact
+Email: vigneshwaran0594@gmail.com
