@@ -2,7 +2,7 @@
 
 ## Overview
 
-<img src="figures/volcano_plot_enhanced.png" width="800" align="centre" alt="Volcano Plot"/>
+<img src="figures/volcano_plot_enhanced.png" width="600" align="centre" alt="Volcano Plot"/>
 
 This project investigates the transcriptional response of *Escherichia coli* to RmpA overexpression using RNA-Sequencing data. RmpA (Regulator of Mucoid Phenotype A) is a transcriptional regulator known to influence capsule production and biofilm formation in *Klebsiella pneumoniae*. By studying its effects in *E. coli*, we gain insights into conserved regulatory mechanisms across bacterial species.
 
@@ -18,7 +18,7 @@ This project investigates the transcriptional response of *Escherichia coli* to 
 
 ## Data Preprocessing
 
-<img src="figures/qc/pca_plot.png" width="800" align="centre" alt="PCA Plot"/>
+<img src="figures/qc/pca_plot.png" width="600" align="centre" alt="PCA Plot"/>
 
 The RNA-seq data analysis began with comprehensive preprocessing to ensure data quality and reliability:
 
@@ -41,7 +41,7 @@ The RNA-seq data analysis began with comprehensive preprocessing to ensure data 
 
 ### 1. Differential Expression
 
-<img src="figures/heatmap_enhanced.png" width="800" align="centre" alt="Heatmap of Top DE Genes"/>
+<img src="figures/heatmap_enhanced.png" width="600" align="centre" alt="Heatmap of Top DE Genes"/>
 
 * **1,515 genes** significantly differentially expressed (FDR < 0.05)
 * **769 genes (16%)** significantly up-regulated 
@@ -52,7 +52,7 @@ The RNA-seq data analysis began with comprehensive preprocessing to ensure data 
 
 ### 2. Pathway Enrichment
 
-<img src="figures/gsea_ridgeplot.png" width="800" align="centre" alt="GSEA Ridgeplot"/>
+<img src="figures/gsea_ridgeplot.png" width="600" align="centre" alt="GSEA Ridgeplot"/>
 
 | Pathway | Description | p-value | Status |
 |---------|-------------|---------|--------|
@@ -63,7 +63,7 @@ The RNA-seq data analysis began with comprehensive preprocessing to ensure data 
 
 GSEA analysis confirmed these findings, with strong enrichment scores for ribosomal and nucleotide sugar pathways.
 
-<img src="figures/top_gsea_pathway.png" width="800" alt="GSEA Plot for Ribosome Pathway"/>
+<img src="figures/top_gsea_pathway.png" width="600" alt="GSEA Plot for Ribosome Pathway"/>
 
 ### 3. Biological Significance
 
@@ -72,7 +72,7 @@ GSEA analysis confirmed these findings, with strong enrichment scores for riboso
 * **Metabolic Reprogramming**: Downregulation of fatty acid metabolism suggests energy redirection
 * **Potential Biofilm Connection**: Several biofilm-related genes show altered expression
 
-<img src="figures/kegg_enrichment_dotplot.png" width="800" alt="KEGG Pathway Dotplot"/>
+<img src="figures/kegg_enrichment_dotplot.png" width="600" alt="KEGG Pathway Dotplot"/>
 
 The transcriptional changes induced by RmpA overexpression align with its known role in *Klebsiella pneumoniae* as a regulator of capsule production and biofilm formation, suggesting conserved mechanisms across related bacterial species.
 
@@ -103,3 +103,30 @@ For complete methodology and detailed findings, see the [full analysis document]
 
 ## Contact
 Email: vigneshwaran0594@gmail.com
+
+
+## References
+
+### Dataset
+1. Yao S, Huang J, Geng J, Wei D, Wang C, Song Y, Zhang G, Feng J. (2023). RmpA as a Global Regulator Modulates Switching Between Hypermucoviscosity and Biofilm in Hypervirulent Klebsiella pneumoniae [RNA-seq]. Gene Expression Omnibus. GSE286114. https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE286114
+
+### Methods and Tools
+2. Love MI, Huber W, Anders S. (2014). Moderated estimation of fold change and dispersion for RNA-seq data with DESeq2. Genome Biology, 15(12), 550. https://doi.org/10.1186/s13059-014-0550-8
+
+3. Yu G, Wang LG, Han Y, He QY. (2012). clusterProfiler: an R package for comparing biological themes among gene clusters. OMICS: A Journal of Integrative Biology, 16(5), 284-287. https://doi.org/10.1089/omi.2011.0118
+
+4. Wickham H. (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4.
+
+### Related Research on RmpA
+
+5. Walker KA, Miller VL. (2020). The intersection of capsule gene expression, hypermucoviscosity and hypervirulence in Klebsiella pneumoniae. Current Opinion in Microbiology, 54, 95-102. https://doi.org/10.1016/j.mib.2020.01.006
+
+6. Paczosa MK, Mecsas J. (2016). Klebsiella pneumoniae: Going on the Offense with a Strong Defense. Microbiology and Molecular Biology Reviews, 80(3), 629-661. https://doi.org/10.1128/MMBR.00078-15 
+
+7. Cheng HY, Chen YS, Wu CY, Chang HY, Lai YC, Peng HL. (2010). RmpA regulation of capsular polysaccharide biosynthesis in Klebsiella pneumoniae CG43. Journal of Bacteriology, 192(12), 3144-3158. https://doi.org/10.1128/JB.00031-10
+
+### E. coli as a Model System
+
+8. Browning DF, Butala M, Busby SJW. (2019). Bacterial Transcription Factors: Regulation by Pick "N" Mix. Journal of Molecular Biology, 431(20), 4067-4077. https://doi.org/10.1016/j.jmb.2019.04.011
+
+9. Beloin C, Roux A, Ghigo JM. (2008). Escherichia coli biofilms. Current Topics in Microbiology and Immunology, 322, 249-289. https://doi.org/10.1007/978-3-540-75418-3_12
